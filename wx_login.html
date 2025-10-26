@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信第三方登录系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <i class="fab fa-weixin text-green-500 text-2xl mr-3"></i>
+                    <h1 class="text-xl font-bold text-gray-800">微信第三方登录系统</h1>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <button id="settingsBtn" class="text-gray-600 hover:text-blue-500 transition-colors">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">微信第三方登录演示</h2>
+            <p class="text-gray-600 mb-6">本系统演示了微信OAuth 2.0授权码模式的完整流程，包括授权请求、回调处理和用户信息获取。</p>
+            
+            <!-- 配置区域 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-700">应用配置</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">AppID</label>
+                            <input type="text" id="appId" placeholder="请输入微信开放平台AppID" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">AppSecret</label>
+                            <input type="password" id="appSecret" placeholder="请输入微信开放平台AppSecret" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-700">回调配置</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">回调地址</label>
+                            <input type="text" id="redirectUri" placeholder="请输入授权回调地址" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">State参数</label>
+                            <input type="text" id="state" placeholder="用于防CSRF攻击的随机字符串" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex flex-wrap gap-4 mb-8">
+                <button id="generateAuthUrl" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105">
+                    <i class="fab fa-weixin mr-2"></i>生成授权链接
+                </button>
+                <button id="simulateLogin" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105">
+                    <i class="fas fa-mobile-alt mr-2"></i>模拟登录流程
+                </button>
+                <button id="clearConfig" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-all transform hover:scale-105">
+                    <i class="fas fa-trash-alt mr-2"></i>清除配置
+                </button>
+            </div>
+
+            <!-- 授权URL显示区域 -->
+            <div id="authUrlSection" class="hidden mb-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">授权请求链接</h3>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <code id="authUrl" class="text-sm text-blue-600 break-all"></code>
+                </div>
+            </div>
+
+            <!-- 用户信息展示区域 -->
+            <div id="userInfoSection" class="hidden">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">用户信息</h3>
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <span class="text-gray-600 font-medium w-24">OpenID:</span>
+                                <span id="userOpenId" class="text-gray-800"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-gray-600 font-medium w-24">昵称:</span>
+                                <span id="userNickname" class="text-gray-800"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-gray-600 font-medium w-24">头像:</span>
+                                <img id="userAvatar" src="" alt="用户头像" class="w-12 h-12 rounded-full">
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <span class="text-gray-600 font-medium w-24">性别:</span>
+                                <span id="userGender" class="text-gray-800"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-gray-600 font-medium w-24">国家:</span>
+                                <span id="userCountry" class="text-gray-800"></span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-gray-600 font-medium w-24">省份:</span>
+                                <span id="userProvince" class="text-gray-800"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 流程说明区域 -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">微信OAuth 2.0登录流程</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-blue-500 text-2xl mb-2">
+                <i class="fas fa-qrcode"></i>
+            </div>
+            <h4 class="font-semibold text-gray-700 mb-2">第一步：请求授权码</h4>
+            <p class="text-sm text-gray-600">引导用户访问微信授权页面获取授权码</p>
+        </div>
+        <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-green-500 text-2xl mb-2">
+                <i class="fas fa-code"></i>
+            </div>
+            <h4 class="font-semibold text-gray-700 mb-2">第二步：换取访问令牌</h4>
+            <p class="text-sm text-gray-600">使用授权码和AppSecret换取access_token</p>
+        </div>
+        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <div class="text-purple-500 text-2xl mb-2">
+                <i class="fas fa-user"></i>
+            </div>
+            <h4 class="font-semibold text-gray-700 mb-2">第三步：获取用户信息</h4>
+            <p class="text-sm text-gray-600">使用access_token获取用户基本信息</p>
+        </div>
+    </div>
+</div>
+</main>
+
+<!-- 设置模态框 -->
+<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800">系统设置</h3>
+        <button id="closeSettings" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-600 mb-2">主题颜色</label>
+            <select id="themeColor" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                <option value="blue">蓝色</option>
+                <option value="green">绿色</option>
+                <option value="purple">紫色</option>
+            </select>
+        </div>
+        <div>
+            <label class="flex items-center">
+                <input type="checkbox" id="autoSave" class="mr-2">
+                <span class="text-sm text-gray-600">自动保存配置</span>
+            </label>
+        </div>
+    </div>
+    <div class="mt-6 flex justify-end">
+        <button id="saveSettings" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                保存设置
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 底部信息 -->
+<footer class="bg-white border-t border-gray-200 mt-12">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <p class="text-center text-gray-600 text-sm">
+            © 2025 微信第三方登录系统 | 基于OAuth 2.0协议实现
+        </p>
+    </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
